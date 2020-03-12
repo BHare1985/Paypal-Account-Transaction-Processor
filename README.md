@@ -22,7 +22,7 @@ interface INotifier {
 }
 ```
 
-Then dependency inject the implementations into `PTAP`, along with a <a href='https://www.php.net/manual/en/class.closure.php'> closure function</a> that depicts what accounts actions you want to take based on <a href='https://developer.paypal.com/docs/ipn/integration-guide/IPNandPDTVariables/'>PDT/IPN variables</a>:
+Then dependency inject the implementations into `PTAP`, along with a <a href='https://www.php.net/manual/en/class.closure.php'> closure function</a> that depicts what accounts actions you want to take based on <a href='https://developer.paypal.com/docs/ipn/integration-guide/IPNandPDTVariables/'>PDT/IPN variables</a> (checkout <a href='https://gist.github.com/BHare1985/7fc719ba3a86c5c499ccdf55d5645e8b'>this gist</a> for a opinionated but more encompassing closure):
 
 ``` php
 $ptap = new PTAP(new DummyAccount(), new DummyLogger(), new DummyNotifier(), function($data){
