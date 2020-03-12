@@ -4,7 +4,7 @@ Process PayPal PDT/IPN messages and link them to simple account modifications.
 # Getting Started
 Implement these interfaces:
 
-```
+``` php
 interface IAccountManager {		
 	public function getId($data);
 	public function isCreated($id);
@@ -24,7 +24,7 @@ interface INotifier {
 
 Then dependency inject the implementations into `PTAP`, along with a <a href='https://www.php.net/manual/en/class.closure.php'> closure function</a> that depicts what accounts actions you want to take based on <a href='https://developer.paypal.com/docs/ipn/integration-guide/IPNandPDTVariables/'>PDT/IPN variables</a>:
 
-```
+``` php
 $ptap = new PTAP(new DummyAccount(), new DummyLogger(), new DummyNotifier(), function($data){
 	if($data['txn_type'] == "web_accept") {
 		return array(Action::create, Category::payment);
@@ -35,10 +35,13 @@ $ptap = new PTAP(new DummyAccount(), new DummyLogger(), new DummyNotifier(), fun
 
 $ptap->process($_POST);
 ```
+
 # Demo
 A very simple demostration of an implmentation that will create accounts when a new subscriber is created. Deactivate accounts if a payment is missed or a dispute is created, and re-activate accounts if a new payment comes in.  The `$repo` variable is meant to represent a repository abstraction (such a database).
 
-```
+``` php
+include("PATP.php");
+
 class DummyAccount implements IAccountManager {
     private $repo = array();
     
@@ -108,7 +111,7 @@ $ptap = new PTAP(new DummyAccount(), new DummyLogger(), new DummyNotifier(), fun
 ```
 
 And then mocking a PayPal POST request to see it in action:
-```
+``` php
 $PaypalData_Payment= array(
 	"txn_type" => "subscr_payment",
 	"subscr_id" => "I-W3V7E2U39WJM",
@@ -149,3 +152,18 @@ $ptap->process($PaypalData_Payment);			// Reactivate account
 $ptap->process($PaypalData_Dispute);			// Deactivate account
 $ptap->process($PaypalData_CancelSubscriber);		// Notify
  ```
+
+Yields the following output:
+
+```
+[LOG] I-W3V7E2U39WJM: array ( 'txn_type' => 'subscr_cancel', 'subscr_id' => 'I-W3V7E2U39WJM', 'payer_email' => 'jbob@gm.com', )
+[NOTIFY] Attempted to set account ID jbob@gm.com activeness to false, but the account wasnt created
+[LOG] I-W3V7E2U39WJM: array ( 'txn_type' => 'subscr_signup', 'subscr_id' => 'I-W3V7E2U39WJM', 'first_name' => 'Joe Bob', 'payer_email' => 'jbob@gm.com', )
+[EMAIL] sent mail to jbob@gm.com -> Hey Joe Bob, your password is foobar
+[LOG] I-W3V7E2U39WJM: array ( 'txn_type' => 'subscr_cancel', 'subscr_id' => 'I-W3V7E2U39WJM', 'payer_email' => 'jbob@gm.com', )
+[LOG] I-W3V7E2U39WJM: array ( 'txn_type' => 'subscr_modify', 'subscr_id' => 'I-W3V7E2U39WJM', 'payer_email' => 'jbob@gm.com', )
+[LOG] I-W3V7E2U39WJM: array ( 'txn_type' => 'subscr_payment', 'subscr_id' => 'I-W3V7E2U39WJM', 'first_name' => 'Joe Bob', 'payer_email' => 'jbob@gm.com', )
+[LOG] CASE444: array ( 'txn_type' => 'new_case', 'case_id' => 'CASE444', 'payer_email' => 'jbob@gm.com', )
+[LOG] I-W3V7E2U39WJM: array ( 'txn_type' => 'subscr_cancel', 'subscr_id' => 'I-W3V7E2U39WJM', 'payer_email' => 'jbob@gm.com', )
+[NOTIFY] Attempted to set account ID jbob@gm.com activeness to false, but it already was.
+```
